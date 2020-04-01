@@ -1,5 +1,4 @@
 import requests
-import urllib
 import os
 import argparse
 from bs4 import BeautifulSoup
@@ -10,8 +9,10 @@ def save_image(url):
     mng_page = os.path.basename(url)
     mng_chpt = os.path.dirname(url)[os.path.dirname(url).rfind('/')+1:]
     picname = path2img + mng_chpt + "_" + mng_page
-    urllib.urlretrieve(url, picname)
-    print "saved", picname
+    r = requests.get(url)
+    with open(picname, 'wb') as outfile:
+        outfile.write(r.content)
+    print("saved", picname)
 
 
 def scrape(chapter):
@@ -27,11 +28,11 @@ def scrape(chapter):
 
             if(result.status_code == 404):
                 if(page == 1):
-                    print "chapter", chapter, "not available, ending process..."
+                    print("chapter", chapter, "not available, ending process...")
                     isNextChapter = False
                     return
                 else:
-                    print url, "not found"
+                    print(url, "not found")
                     isNextPage = False
                     continue
 
@@ -82,14 +83,14 @@ def img2pdf(chapter):
         pdfName = path2pdf + str(chapter) + ".pdf"
         cover.save(pdfName, "PDF", resolution=100.0, save_all=True,
                    append_images=current_chapter_list)
-        print "saved", pdfName
+        print("saved", pdfName)
         chapter = chapter + 1
     else:
-        print "the chapter", chapter, "does not exist, stoping process..."
+        print("the chapter", chapter, "does not exist, stoping process...")
         return
 
 
-print "One Piece Manga Scraper v0.1.0"
+print("One Piece Manga Scraper v1.0.0")
 
 parser = argparse.ArgumentParser(
     description="script to scrape the one piece manga from 'onepiece-tube.com' and parse it into pdf format"
@@ -99,21 +100,21 @@ parser.add_argument(
     '-i', '--images',
     help="path to store images",
     type=str,
-    default='.'
+    default='./tmp'
 )
 
 parser.add_argument(
     '-p', '--pdfs',
     help="path to store pdfs",
     type=str,
-    default='.'
+    default='./pdf'
 )
 
 parser.add_argument(
     '-c', '--chapter',
     help="chapter where the scraper will start",
     type=int,
-    default=925
+    default=1
 )
 
 arguments = parser.parse_args()
@@ -125,5 +126,11 @@ path2pdf = arguments.pdfs
 if not path2pdf.endswith("/"):
     path2pdf += "/"
 chapter  = arguments.chapter
+
+if not os.path.exists(path2img):
+    os.mkdir(path2img)
+
+if not os.path.exists(path2pdf):
+    os.mkdir(path2pdf)
 
 scrape(chapter)
